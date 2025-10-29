@@ -1,0 +1,51 @@
+import pandas as pd
+import numpy as np
+import matplotlib.pyplot as plt
+
+
+data = iot_data.copy()
+
+
+print("✅ Data Loaded Successfully!")
+print(data.head())
+
+
+missing_values = data.isnull().sum()
+completeness = 100 - (missing_values.sum() / (len(data) * len(data.columns))) * 100
+
+duplicates = data.duplicated().sum()
+
+invalid_temp_range = data[(data['temperature'] < -10) | (data['temperature'] > 60)].shape[0]
+invalid_humidity_range = data[(data['humidity'] < 0) | (data['humidity'] > 100)].shape[0]
+
+data['timestamp'] = pd.to_datetime(data['timestamp'], errors='coerce')
+data = data.sort_values(by='timestamp')
+time_diff = data['timestamp'].diff().dt.total_seconds().dropna()
+avg_gap = round(time_diff.mean(), 2)
+
+data['temperature'].fillna(data['temperature'].mean(), inplace=True)
+data['humidity'].fillna(data['humidity'].mean(), inplace=True)
+
+data = data.drop_duplicates()
+
+print("\n📊 Data Quality Report")
+print("----------------------------")
+print(f"Total Rows: {len(data)}")
+print(f"Completeness: {completeness:.2f}%")
+print(f"Duplicate Rows: {duplicates}")
+print(f"Invalid Temperature Values: {invalid_temp_range}")
+print(f"Invalid Humidity Values: {invalid_humidity_range}") 
+print(f"Average Time Gap Between Readings: {avg_gap} seconds")
+
+data.to_csv("clean_data.csv", index=False)
+print("\n✅ Cleaned data saved as 'clean_data.csv'")
+
+plt.figure(figsize=(10,5))
+plt.plot(data['timestamp'], data['temperature'], label='Temperature (°C)', color='orange')
+plt.plot(data['timestamp'], data['humidity'], label='Humidity (%)', color='blue')
+plt.xlabel('Timestamp')
+plt.ylabel('Sensor Values')
+plt.title('IoT Sensor Data Over Time')
+plt.legend()
+plt.tight_layout()
+plt.show()
